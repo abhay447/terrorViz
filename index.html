@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html, body, #map { margin: 0; padding: 0; height: 100%; }
+    </style> 
+    <script>
+      var map;
+      var heatmap;
+      var pointArray;
+       var styles = [{
+          "featureType": "landscape.natural.terrain",
+          "stylers": [
+              { "visibility": "off" }
+          ]
+      },{
+          "featureType": "landscape.natural.landcover",
+          "stylers": [
+              { "visibility": "off" }
+          ]
+      },{
+          "featureType": "poi.park",
+          "stylers": [
+              { "visibility": "off" }
+          ]
+      },{
+          "featureType": "water",
+          "stylers": [
+              { "visibility": "on" }
+          ]
+      }];
+
+      function initialize() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 4,
+          center: new google.maps.LatLng(23.5,87.5),
+          styles : styles
+        });
+        pointArray = new google.maps.MVCArray([]);
+        heatmap = new google.maps.visualization.HeatmapLayer({
+          data: pointArray
+        });
+        heatmap.setMap(map);         
+      }
+      
+      function fetchJSONFile(path, callback) {
+            var httpRequest = new XMLHttpRequest();
+            httpRequest.onreadystatechange = function() {
+                if (httpRequest.readyState === 4) {
+                    if (httpRequest.status === 200) {
+                        var data = JSON.parse(httpRequest.responseText);
+                        if (callback) callback(data);
+                    }
+                }
+            };
+            httpRequest.open('GET', path);
+            httpRequest.send(); 
+        }
+
+      var totalDeaths = 0;  
+      function pushIncident(data,i){
+        var coords = [ data.latitude, data.longitude ];
+        var latLng = new google.maps.LatLng(coords[0],coords[1]);
+        /*var marker = new google.maps.Marker({
+          position: latLng,
+          map: map
+          });*/
+        pointArray.push({location:latLng,weight:data.deaths});
+        totalDeaths += data.deaths;
+        var detailsElement = document.getElementById('Details');
+        detailsElement.innerHTML = "<b>Year :<b> "+data.year+"<br/><b>Incidents :<b> "+i+
+          "<br/><b>Deaths :<b> "+totalDeaths;
+      }
+      
+      function addIncidents(){
+          fetchJSONFile('data.json', function(incidents){
+              // do something with your data
+              for(var i = 0; i<incidents.data.length;i++){                
+                setTimeout(pushIncident,200*i,incidents.data[i],i);
+              }
+          });
+      }
+      addIncidents();
+    </script>
+  </head>
+  <body>
+    <div id="Details">t</div>
+    <div id="map"></div>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB__fumBHP3aww0MabiHKJUpbiodFWvz8w&callback=initialize&libraries=visualization">
+    </script>      
+  </body>
+</html>
